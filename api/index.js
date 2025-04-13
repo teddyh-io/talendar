@@ -6,6 +6,8 @@ const { parse } = require("csv-parse/sync");
 // Font registration (ensure paths are correct relative to the serverless function)
 registerFont(require('path').join(__dirname, './fonts/Poppins-Bold.ttf'), { family: 'Poppins', weight: 'bold' });
 registerFont(require('path').join(__dirname, './fonts/Poppins-Regular.ttf'), { family: 'Poppins', weight: 'normal' });
+registerFont(require('path').join(__dirname, './fonts/NotoSC-Bold.otf'), { family: 'NotoSansSC' , weight: 'bold'});
+registerFont(require('path').join(__dirname, './fonts/NotoSC-Regular.otf'), { family: 'NotoSansSC' , weight: 'normal'});
 
 const NAMES = ["Tally", "tal", "natalia", "bub", "bubby"];
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTk9AK81OL4Ccb0zfGFs5md5WYwtaKJFw3v26RFEz0DN5OYDOSqTsoww53PRuTUBS6gFRM9Lmc-5LgA/pub?output=csv";
@@ -37,19 +39,36 @@ module.exports = async (req, res) => {
       ctx.lineTo(width - 40, 110);
       ctx.stroke();
   
+      const monthMap = {
+        "Jan": "一月",
+        "Feb": "二月",
+        "Mar": "三月",
+        "Apr": "四月",
+        "May": "五月",
+        "Jun": "六月",
+        "Jul": "七月",
+        "Aug": "八月",
+        "Sep": "九月",
+        "Oct": "十月",
+        "Nov": "十一月",
+        "Dec": "十二月"
+      };      
+      const currentMonthEn = currentEST.format("MMM");
+      const currentMonthZh = monthMap[currentMonthEn];
       ctx.font = "bold 32px Poppins";
       ctx.textBaseline = "middle";
       ctx.textAlign = "left";
-      ctx.fillText(currentEST.format("MMM").toUpperCase(), 30, 75);
+      ctx.fillText(currentMonthEn.toUpperCase(), 30, 75);
       ctx.textAlign = "center";
       ctx.fillText(currentEST.format("YYYY"), width / 2, 75);
       ctx.textAlign = "right";
-      ctx.fillText("十一月", width - 30, 75);
+      ctx.font = "bold 32px NotoSansSC"; // use NotoSansSC for Chinese month
+      ctx.fillText(currentMonthZh, width - 30, 75);
   
       // --- Date (massively large) ---
       ctx.font = "bold 350px Poppins";
       ctx.textAlign = "center";
-      ctx.fillText(currentEST.format("D"), width / 2, 280);
+      ctx.fillText(currentEST.format("D"), width / 2, 290);
   
       // --- Line below big date ---
       ctx.beginPath();
@@ -85,6 +104,7 @@ module.exports = async (req, res) => {
       ctx.fillText(`good afternoon, ${randomName}`, boxX + boxWidth / 2, boxY + 40);
   
       // Day & Chinese (middle left)
+      ctx.font = "bold 28px NotoSansSC";
       const weekdayMap = {Mon:"星期一",Tue:"星期二",Wed:"星期三",Thu:"星期四",Fri:"星期五",Sat:"星期六",Sun:"星期日"};
       const dayEnZh = `${currentEST.format("ddd").toUpperCase()} | ${weekdayMap[currentEST.format("ddd")]}`;
       ctx.font = "bold 40px Poppins";
