@@ -1,38 +1,33 @@
-const express = require("express");
 const { createCanvas, registerFont } = require("canvas");
 const axios = require("axios");
 const moment = require("moment-timezone");
 const { parse } = require("csv-parse/sync");
 
-registerFont('./fonts/Poppins-Bold.ttf', { family: 'Poppins', weight: 'bold' });
-registerFont('./fonts/Poppins-Regular.ttf', { family: 'Poppins', weight: 'normal' });
+// Font registration (ensure paths are correct relative to the serverless function)
+registerFont(require('path').join(__dirname, './fonts/Poppins-Bold.ttf'), { family: 'Poppins', weight: 'bold' });
+registerFont(require('path').join(__dirname, './fonts/Poppins-Regular.ttf'), { family: 'Poppins', weight: 'normal' });
+
+const NAMES = ["Tally", "tal", "natalia", "bub", "bubby"];
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTk9AK81OL4Ccb0zfGFs5md5WYwtaKJFw3v26RFEz0DN5OYDOSqTsoww53PRuTUBS6gFRM9Lmc-5LgA/pub?output=csv";
+
+module.exports = async (req, res) => {
+  try {
+    const csvResponse = await axios.get(CSV_URL);
+    const records = parse(csvResponse.data, { columns: true, skip_empty_lines: true });
+
+    const currentEST = moment().tz("America/New_York");
+    const todayMessage = records.find(row => row.date === currentEST.format("YYYY-MM-DD"))?.message || "No special message for today!";
+    const randomName = NAMES[Math.floor(Math.random() * NAMES.length)];
+
+    const width = 600, height = 800;
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = ctx.fillStyle = "#000000";
 
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-const NAMES = ["tally", "tal", "natalia", "bub", "bubby"];
-
-const CSV_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTk9AK81OL4Ccb0zfGFs5md5WYwtaKJFw3v26RFEz0DN5OYDOSqTsoww53PRuTUBS6gFRM9Lmc-5LgA/pub?output=csv";
-
-  app.get("/", async (req, res) => {
-    try {
-      const csvResponse = await axios.get(CSV_URL);
-      const records = parse(csvResponse.data, { columns: true, skip_empty_lines: true });
-  
-      const currentEST = moment().tz("America/New_York");
-      const todayMessage = records.find(row => row.date === currentEST.format("YYYY-MM-DD"))?.message || "No special message for today!";
-      const randomName = NAMES[Math.floor(Math.random() * NAMES.length)];
-  
-      const width = 600, height = 800;
-      const canvas = createCanvas(width, height);
-      const ctx = canvas.getContext("2d");
-  
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, width, height);
-      ctx.strokeStyle = ctx.fillStyle = "#000000";
-  
       // --- Month and Year lines ---
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -129,15 +124,14 @@ const CSV_URL =
   
       ctx.font = "bold 30px Poppins";
       wrapTextCentered(ctx, todayMessage, msgX, msgY, msgWidth, 36);
-  
-      res.setHeader("Content-Type", "image/png");
-      canvas.pngStream().pipe(res);
-    } catch (error) {
-      console.error("Error generating image:", error);
-      res.status(500).send("Error generating image");
-    }
-  });
-   
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+
+    // After drawing finishes, send the response:
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'image/png');
+    res.end(canvas.toBuffer('image/png'));
+  } catch (error) {
+    console.error("Error generating image:", error);
+    res.statusCode = 500;
+    res.end("Internal Server Error");
+  }
+};

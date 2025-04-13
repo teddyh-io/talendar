@@ -13,7 +13,7 @@
     "axios": "^1.8.4",
     "canvas": "^3.1.0",
     "csv-parse": "^5.6.0",
-    "express": "^5.1.0",
-    "moment-timezone": "^0.5.48"
+    "moment-timezone": "^0.5.48",
+    "serverless-http": "^3.2.0"
   }
 }
